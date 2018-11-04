@@ -46,7 +46,7 @@ BUILDING_IN_LAB = 0
 #############################
 
 CXX    = g++
-CFLAGS = -Wall -g
+CFLAGS = -Wall -g -std=c++11
 
 LAB_INC_PATH = Z:/CSCI441/include
 LAB_LIB_PATH = Z:/CSCI441/lib
@@ -87,6 +87,24 @@ else
 endif
 
 #############################
+## SETUP GLEW
+#############################
+
+# Windows builds
+ifeq ($(OS), Windows_NT)
+	LIBS += -lglew32.dll
+
+# Mac builds
+else 
+	ifeq ($(shell uname), Darwin)
+		LIBS += -lglew
+	# Linux and all other builds
+	else
+		LIBS += -lglew
+	endif
+endif
+
+#############################
 ## COMPILATION INSTRUCTIONS
 #############################
 
@@ -97,10 +115,10 @@ obj = $(src:.cpp=.o)
 all: $(TARGET)
 
 $(TARGET): $(obj)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBPATH) $(LIBS)
+	$(CXX) $(CFLAGS) -o $@ $^ $(LIBPATH) $(LIBS)
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) $(INCPATH) -c -o $@ $<
+	$(CXX) $(CLAGS) $(INCPATH) -c -o $@ $<
 
 .PHONY: clean
 clean:
