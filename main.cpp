@@ -66,6 +66,9 @@ void cursorCallback( GLFWwindow *window, double x, double y ) {
 	if(leftMouse) {
 		yaw += 0.008f * mdx;
 		pitch += 0.008f * mdy;
+		
+		if(pitch >= M_PI/2 - 0.01f) pitch = M_PI/2 - 0.01f;
+		if(pitch <= -M_PI/2 + 0.01f) pitch = -M_PI/2 + 0.01f;
 	}
 
 	mousePos.x = x;
@@ -187,29 +190,32 @@ void setupSkybox() {
 		1.0f, -1.0f, -1.0f,
 		1.0f, 1.0f, -1.0f,
 		-1.0f, 1.0f, -1.0f,
-
-
+	
+		// Right
 		-1.0f, -1.0f, 1.0f,
 		-1.0f, -1.0f, -1.0f,
 		-1.0f, 1.0f, -1.0f,
 		-1.0f, 1.0f, -1.0f,
 		-1.0f, 1.0f, 1.0f,
 		-1.0f, -1.0f, 1.0f,
-
+		
+		// Left
 		1.0f, -1.0f, -1.0f,
 		1.0f, -1.0f, 1.0f,
 		1.0f, 1.0f, 1.0f,
 		1.0f, 1.0f, 1.0f,
 		1.0f, 1.0f, -1.0f,
 		1.0f, -1.0f, -1.0f,
-
+	
+		// Front
 		-1.0f, -1.0f, 1.0f,
 		-1.0f, 1.0f, 1.0f,
 		1.0f, 1.0f, 1.0f,
 		1.0f, 1.0f, 1.0f,
 		1.0f, -1.0f, 1.0f,
 		-1.0f, -1.0f, 1.0f,
-
+		
+		// Top
 		-1.0f, 1.0f, -1.0f,
 		1.0f, 1.0f, -1.0f,
 		1.0f, 1.0f, 1.0f,
@@ -217,6 +223,7 @@ void setupSkybox() {
 		-1.0f, 1.0f, 1.0f,
 		-1.0f, 1.0f, -1.0f,
 
+		// Bottom
 		-1.0f, -1.0f, -1.0f,
 		-1.0f, -1.0f, 1.0f,
 		1.0f, -1.0f, -1.0f,
@@ -337,7 +344,7 @@ int main( int argc, char *argv[] ) {
 		glm::mat4 modelMtx = glm::mat4(1.0f);
 
 		// Calculate the model view projection matrix and send it to the GPU
-		glm::mat4 viewNoTranslate = glm::mat4(glm::mat3(viewMtx));
+		glm::mat4 viewNoTranslate = glm::mat4(glm::mat3(viewMtx)); // View matrix without translations
 		glm::mat4 mvpMtx = projMtx * viewNoTranslate * modelMtx;
 
 		int mvpLocation = glGetUniformLocation(skyboxShader.getProgram(), "mvpMatrix");
