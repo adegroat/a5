@@ -7,7 +7,7 @@ out vec3 texCoord;
 uniform mat4 mvpMatrix;
 
 void main() {
-	float scale = 40.0;
+	float scale = 15.0;
 	vec3 scalePos = scale * vPos;
 
 	texCoord = vPos;

@@ -337,10 +337,14 @@ int main( int argc, char *argv[] ) {
 		glm::mat4 modelMtx = glm::mat4(1.0f);
 
 		// Calculate the model view projection matrix and send it to the GPU
-		glm::mat4 mvpMtx = projMtx * viewMtx * modelMtx;
+		glm::mat4 viewNoTranslate = glm::mat4(glm::mat3(viewMtx));
+		glm::mat4 mvpMtx = projMtx * viewNoTranslate * modelMtx;
+
 		int mvpLocation = glGetUniformLocation(skyboxShader.getProgram(), "mvpMatrix");
 		skyboxShader.useProgram();
 		glUniformMatrix4fv(mvpLocation, 1, GL_FALSE, &mvpMtx[0][0]);
+
+		mvpMtx = projMtx * viewMtx * modelMtx;
 
 		int modelMvpLocation = glGetUniformLocation(modelShader.getProgram(), "mvpMatrix");
 		modelShader.useProgram();
