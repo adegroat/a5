@@ -23,12 +23,14 @@ bool leftMouse = false;
 
 GLuint shaderProgram;
 GLuint vao;
+GLuint skyboxTex;
+
 
 glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f);
 glm::vec3 camPos;
 glm::vec3 camForward;
 float yaw, pitch;
-float moveSpeed = 1.0f;
+float moveSpeed = 2.0f;
 
 std::string loadShaderSource(std::string shader) {
 	std::ifstream shaderFile(shader.c_str());
@@ -127,7 +129,7 @@ void setupGLEW() {
 	if( glewResult != GLEW_OK ) {
 		printf( "[ERROR]: Error initalizing GLEW\n");
 		/* Problem: glewInit failed, something is seriously wrong. */
-  	fprintf( stderr, "[ERROR]: %s\n", glewGetErrorString(glewResult) );
+  		fprintf( stderr, "[ERROR]: %s\n", glewGetErrorString(glewResult) );
 		exit(EXIT_FAILURE);
 	} else {
 		 fprintf( stdout, "[INFO]: GLEW initialized\n" );
@@ -185,28 +187,77 @@ void setupShaders() {
 }
 
 void setupSkybox() {
-	// Load texture data
-	int width, height;
-	unsigned char* textureData = SOIL_load_image("textures/skybox/posz.jpg", &width, &height, 0, SOIL_LOAD_RGB);
+	// Load all the textures onto the GPU
+	std::string textures[] = {
+		"posx.jpg",
+		"negx.jpg",
+		"posy.jpg",
+		"negy.jpg",
+		"posz.jpg",
+		"negz.jpg"
+	};
 
-	// Setup texture
-	GLuint skyboxTex;
 	glGenTextures(1, &skyboxTex);
-	glBindTexture(GL_TEXTURE_2D, skyboxTex);
-    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTex);
 
-	float skyboxSize = 2.0f;
+	int width, height;
+	unsigned char* textureData = 0;
+	for(int i = 0; i < 6; i++) {
+		std::string texturePath = "textures/skybox/" + textures[i];
+		textureData = SOIL_load_image(texturePath.c_str(), &width, &height, 0, SOIL_LOAD_RGB);
+	    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
+	}
+
+	// Setup texture parameters
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	float skyboxVerts[] = {
-		-skyboxSize, -skyboxSize, 5.0f, 0.0f, 0.0f,
-		skyboxSize, -skyboxSize, 5.0f, 1.0f, 0.0f,
-		-skyboxSize, skyboxSize, 5.0f, 0.0f, 1.0f,
-		skyboxSize, skyboxSize, 5.0f, 1.0f, 1.0f
+	    -1.0f,  1.0f, -1.0f,
+	    -1.0f, -1.0f, -1.0f,
+	     1.0f, -1.0f, -1.0f,
+	     1.0f, -1.0f, -1.0f,
+	     1.0f,  1.0f, -1.0f,
+	    -1.0f,  1.0f, -1.0f,
+
+	    -1.0f, -1.0f,  1.0f,
+	    -1.0f, -1.0f, -1.0f,
+	    -1.0f,  1.0f, -1.0f,
+	    -1.0f,  1.0f, -1.0f,
+	    -1.0f,  1.0f,  1.0f,
+	    -1.0f, -1.0f,  1.0f,
+
+	     1.0f, -1.0f, -1.0f,
+	     1.0f, -1.0f,  1.0f,
+	     1.0f,  1.0f,  1.0f,
+	     1.0f,  1.0f,  1.0f,
+	     1.0f,  1.0f, -1.0f,
+	     1.0f, -1.0f, -1.0f,
+
+	    -1.0f, -1.0f,  1.0f,
+	    -1.0f,  1.0f,  1.0f,
+	     1.0f,  1.0f,  1.0f,
+	     1.0f,  1.0f,  1.0f,
+	     1.0f, -1.0f,  1.0f,
+	    -1.0f, -1.0f,  1.0f,
+
+	    -1.0f,  1.0f, -1.0f,
+	     1.0f,  1.0f, -1.0f,
+	     1.0f,  1.0f,  1.0f,
+	     1.0f,  1.0f,  1.0f,
+	    -1.0f,  1.0f,  1.0f,
+	    -1.0f,  1.0f, -1.0f,
+
+	    -1.0f, -1.0f, -1.0f,
+	    -1.0f, -1.0f,  1.0f,
+	     1.0f, -1.0f, -1.0f,
+	     1.0f, -1.0f, -1.0f,
+	    -1.0f, -1.0f,  1.0f,
+	     1.0f, -1.0f,  1.0f
 	};
 
 	glGenVertexArrays(1, &vao);
@@ -219,17 +270,23 @@ void setupSkybox() {
 
 	// Vertex position
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 
 	// Texture coordinates
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	//glEnableVertexAttribArray(1);
+	//glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 }
 
 void render() {
+	
 	glUseProgram(shaderProgram);
 	glBindVertexArray(vao);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTex);
+	
+
+
+	glDrawArrays(GL_TRIANGLES, 0, 36);
+	
 }
 
 void update(float dt) {
@@ -254,10 +311,10 @@ void update(float dt) {
 
 	// Arrow keys for looking around
 	if(keyboard[GLFW_KEY_LEFT]) {
-		yaw -= 0.5f * dt;
+		yaw -= 1.0f * dt;
 	}
 	if(keyboard[GLFW_KEY_RIGHT]) {
-		yaw += 0.5f * dt;
+		yaw += 1.0f * dt;
 	}
 }
 
