@@ -7,10 +7,10 @@
 #include <SOIL/SOIL.h>
 
 #include <stdio.h>
-#include <iostream>
 #include <string>
-#include <fstream>
 #include <map>
+
+#include "Shader.h"
 
 int windowWidth = 800;
 int windowHeight = 600;
@@ -21,34 +21,16 @@ float fps = 60.0f;
 std::map<int, bool> keyboard;
 bool leftMouse = false;
 
-GLuint shaderProgram;
-GLuint vao;
+// Sky box 
+GLuint skyboxVao;
 GLuint skyboxTex;
-
+Shader skyboxShader;
 
 glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f);
 glm::vec3 camPos;
 glm::vec3 camForward;
 float yaw, pitch;
-float moveSpeed = 2.0f;
-
-std::string loadShaderSource(std::string shader) {
-	std::ifstream shaderFile(shader.c_str());
-	if(!shaderFile.is_open()) {
-		std::cout << "Failed to open shader file " << shader << std::endl;
-		return "";
-	}
-
-	std::string data;
-
-	while(!shaderFile.eof()) {
-		std::string line;
-		std::getline(shaderFile, line);
-		data += line + "\n";
-	}
-
-	return data;
-}
+float moveSpeed = 5.0f;
 
 void errorCallback(int error, const char* desc) {
 	std::cout << "ERROR: " << desc << std::endl;
@@ -142,60 +124,12 @@ void setupGLEW() {
 	}
 }
 
-void printShaderLog(GLuint shader) {
-	int success;
-	char infoLog[512];
-
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-	if (!success) {
-		glGetShaderInfoLog(shader, 512, NULL, infoLog);
-		std::cout << "Shader " << shader << " compile error\n" << infoLog << std::endl;
-	} else {
-		std::cout << "Shader " << shader << " successfully compiled." << std::endl;
-	}
-}
-
-void setupShaders() {
-	const char* vertexShaderSource = loadShaderSource("shaders/vertex.glsl").c_str();
-	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-	glCompileShader(vertexShader);
-	printShaderLog(vertexShader);
-
-	const char* fragmentShaderSource = loadShaderSource("shaders/fragment.glsl").c_str();
-	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	glCompileShader(fragmentShader);
-	printShaderLog(fragmentShader);
-
-	shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-
-	// Print status of program linking
-	int success;
-	char infoLog[512];
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-		std::cout << "shaderProgram link error:\n" << infoLog << std::endl;
-	}
-	
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-}
-
 void setupSkybox() {
+	skyboxShader.init("shaders/vertex.glsl", "shaders/fragment.glsl");
+
 	// Load all the textures onto the GPU
-	std::string textures[] = {
-		"posx.jpg",
-		"negx.jpg",
-		"posy.jpg",
-		"negy.jpg",
-		"posz.jpg",
-		"negz.jpg"
-	};
+	std::string textures[] = {"posx", "negx", "posy", "negy", "posz", "negz"};
+	// std::string textures[] = {"rt", "lf", "up", "dn", "ft", "bk"};
 
 	glGenTextures(1, &skyboxTex);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTex);
@@ -203,9 +137,15 @@ void setupSkybox() {
 	int width, height;
 	unsigned char* textureData = 0;
 	for(int i = 0; i < 6; i++) {
-		std::string texturePath = "textures/skybox/" + textures[i];
+		std::string texturePath = "textures/skybox/bkg1_" + textures[i] + ".png";
+
 		textureData = SOIL_load_image(texturePath.c_str(), &width, &height, 0, SOIL_LOAD_RGB);
-	    glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
+			
+		if(textureData == NULL) {
+			std::cout << "Failed to load texture: " << texturePath << std::endl;
+		}
+
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
 	}
 
 	// Setup texture parameters
@@ -260,8 +200,8 @@ void setupSkybox() {
 	     1.0f, -1.0f,  1.0f
 	};
 
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
+	glGenVertexArrays(1, &skyboxVao);
+	glBindVertexArray(skyboxVao);
 
 	GLuint vbo;
 	glGenBuffers(1, &vbo);
@@ -278,20 +218,16 @@ void setupSkybox() {
 }
 
 void render() {
-	
-	glUseProgram(shaderProgram);
-	glBindVertexArray(vao);
+	skyboxShader.useProgram();
+	glBindVertexArray(skyboxVao);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTex);
-	
-
-
 	glDrawArrays(GL_TRIANGLES, 0, 36);
-	
 }
 
 void update(float dt) {
-	camForward.x = cos(yaw);
-	camForward.z = sin(yaw);
+	camForward.x = cos(yaw) * cos(pitch);
+	camForward.y = sin(pitch);
+	camForward.z = sin(yaw) * cos(pitch);
 	camForward = glm::normalize(camForward);
 	glm::vec3 strafe = glm::cross(upVector, camForward);
 
@@ -316,6 +252,12 @@ void update(float dt) {
 	if(keyboard[GLFW_KEY_RIGHT]) {
 		yaw += 1.0f * dt;
 	}
+	if(keyboard[GLFW_KEY_UP]) {
+		pitch += 1.0f * dt;
+	}
+	if(keyboard[GLFW_KEY_DOWN]) {
+		pitch -= 1.0f * dt;
+	}
 }
 
 int main( int argc, char *argv[] ) {
@@ -333,7 +275,6 @@ int main( int argc, char *argv[] ) {
 	yaw = M_PI / 2.0f;
 	pitch = 0.0f;
 
-	setupShaders();
 	setupSkybox();
 
 	float prevTime = glfwGetTime();
@@ -360,7 +301,7 @@ int main( int argc, char *argv[] ) {
 
 		// Calculate the model view projection matrix and update its uniform
 		glm::mat4 mvpMtx = projMtx * viewMtx * modelMtx;
-		int mvpLocation = glGetUniformLocation(shaderProgram, "mvpMatrix");
+		int mvpLocation = glGetUniformLocation(skyboxShader.getProgram(), "mvpMatrix");
 		glUniformMatrix4fv(mvpLocation, 1, GL_FALSE, &mvpMtx[0][0]);
 
 		render();
