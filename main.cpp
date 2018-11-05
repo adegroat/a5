@@ -10,6 +10,8 @@
 #include <string>
 #include <map>
 
+#include <CSCI441/modelLoader3.hpp>
+
 #include "Shader.h"
 
 int windowWidth = 800;
@@ -20,11 +22,18 @@ float fps = 60.0f;
 // Mouse and keyboard inputs
 std::map<int, bool> keyboard;
 bool leftMouse = false;
+glm::vec2 mouseChange, mousePos;
+double mx, my, mdx, mdy;
 
 // Sky box 
 GLuint skyboxVao;
 GLuint skyboxTex;
 Shader skyboxShader;
+
+// Model
+CSCI441::ModelLoader* objModel;
+GLuint modeVao;
+Shader modelShader;
 
 glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f);
 glm::vec3 camPos;
@@ -51,7 +60,8 @@ void keyboardCallback(GLFWwindow *window, int key, int scancode, int action, int
 }
 
 void cursorCallback( GLFWwindow *window, double x, double y ) {
-	
+	mx = x;
+	my = y;
 }
 
 void mouseButtonCallback( GLFWwindow *window, int button, int action, int mods ) {
@@ -137,7 +147,7 @@ void setupSkybox() {
 	int width, height;
 	unsigned char* textureData = 0;
 	for(int i = 0; i < 6; i++) {
-		std::string texturePath = "textures/skybox/bkg1_" + textures[i] + ".png";
+		std::string texturePath = "textures/skybox/light_" + textures[i] + ".png";
 
 		textureData = SOIL_load_image(texturePath.c_str(), &width, &height, 0, SOIL_LOAD_RGB);
 			
@@ -211,10 +221,6 @@ void setupSkybox() {
 	// Vertex position
 	glEnableVertexAttribArray(0);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
-	// Texture coordinates
-	//glEnableVertexAttribArray(1);
-	//glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 }
 
 void render() {
@@ -222,9 +228,28 @@ void render() {
 	glBindVertexArray(skyboxVao);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTex);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
+
+	modelShader.useProgram();
+	GLint vertexPosition = glGetAttribLocation(modelShader.getProgram(), "vPos");
+	//GLint normalPosition = glGetAttribLocation(modelShader.getProgram(), "verNormAttribName");
+	objModel->draw(vertexPosition);
 }
 
 void update(float dt) {
+	if(leftMouse) {
+		float rotateSpeed = 0.5f;
+
+		if(mdx > 0.1f) {
+			yaw += mdx * dt * rotateSpeed;
+			mdx = 0.0f;
+		}
+
+		if(mdy > 0.1f) {
+			pitch -= mdy * dt * rotateSpeed;
+			mdy = 0.0f;
+		}
+	}
+
 	camForward.x = cos(yaw) * cos(pitch);
 	camForward.y = sin(pitch);
 	camForward.z = sin(yaw) * cos(pitch);
@@ -258,6 +283,9 @@ void update(float dt) {
 	if(keyboard[GLFW_KEY_DOWN]) {
 		pitch -= 1.0f * dt;
 	}
+
+	if(pitch >= M_PI/2 - 0.01f) pitch = M_PI/2 - 0.01f;
+	if(pitch <= -M_PI/2 + 0.01f) pitch = -M_PI/2 + 0.01f;
 }
 
 int main( int argc, char *argv[] ) {
@@ -266,16 +294,22 @@ int main( int argc, char *argv[] ) {
 		return -1;
 	}
 
-	GLFWwindow *window = setupGLFW();
-	setupOpenGL();
-	setupGLEW();
-
+	// Initialize camera
 	camPos = glm::vec3(0.0f, 0.0f, 0.0f);
 	camForward = glm::vec3(0.0f, 0.0f, -1.0f);
 	yaw = M_PI / 2.0f;
 	pitch = 0.0f;
 
+	GLFWwindow *window = setupGLFW();
+	setupOpenGL();
+	setupGLEW();
+	
 	setupSkybox();
+
+	// Initialize model
+	modelShader.init("shaders/modelVertex.glsl", "shaders/modelFragment.glsl");
+	CSCI441::ModelLoader model(argv[1]);
+	objModel = &model;
 
 	float prevTime = glfwGetTime();
 
@@ -302,7 +336,12 @@ int main( int argc, char *argv[] ) {
 		// Calculate the model view projection matrix and update its uniform
 		glm::mat4 mvpMtx = projMtx * viewMtx * modelMtx;
 		int mvpLocation = glGetUniformLocation(skyboxShader.getProgram(), "mvpMatrix");
+		skyboxShader.useProgram();
 		glUniformMatrix4fv(mvpLocation, 1, GL_FALSE, &mvpMtx[0][0]);
+
+		int modelMvpLocation = glGetUniformLocation(modelShader.getProgram(), "mvpMatrix");
+		modelShader.useProgram();
+		glUniformMatrix4fv(modelMvpLocation, 1, GL_FALSE, &mvpMtx[0][0]);
 
 		render();
 		update(dt);

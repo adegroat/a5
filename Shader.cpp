@@ -22,12 +22,16 @@ std::string Shader::loadShaderSource(std::string shader) {
 	return data;
 }
 
-void Shader::printShaderLog(GLuint shader) {
+void Shader::printShaderLog(GLuint shader, const char* source) {
 	int success;
 	char infoLog[512];
 
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
 	if (!success) {
+		if(source != NULL) {
+			std::cout << source << std::endl;
+		}
+
 		glGetShaderInfoLog(shader, 512, NULL, infoLog);
 		std::cout << "Shader " << shader << " compile error\n" << infoLog << std::endl;
 	} else {
@@ -40,20 +44,18 @@ void Shader::init(std::string vertexShaderFile, std::string fragmentShaderFile) 
 	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
 	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
 	glCompileShader(vertexShader);
-	printShaderLog(vertexShader);
+	printShaderLog(vertexShader, vertexShaderSource);
 
 	const char* fragmentShaderSource = loadShaderSource(fragmentShaderFile).c_str();
 	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
 	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
 	glCompileShader(fragmentShader);
-	printShaderLog(fragmentShader);
+	printShaderLog(fragmentShader, fragmentShaderSource);
 	
-
 	program = glCreateProgram();
 	glAttachShader(program, vertexShader);
 	glAttachShader(program, fragmentShader);
 	glLinkProgram(program);
-
 
 	// Print status of program linking
 	int success;

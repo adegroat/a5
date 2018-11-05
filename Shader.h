@@ -12,7 +12,7 @@ protected:
 	GLuint vao;
 	GLuint textureId;
 
-	void printShaderLog(GLuint shader);
+	void printShaderLog(GLuint shader, const char* source = NULL);
 	std::string loadShaderSource(std::string shader);
 public:
 	Shader() {}

@@ -10,6 +10,6 @@ void main() {
 	float scale = 40.0;
 	vec3 scalePos = scale * vPos;
 
-	gl_Position = mvpMatrix * vec4(scalePos, 1.0);
 	texCoord = vPos;
+	gl_Position = mvpMatrix * vec4(scalePos, 1.0);
 }
