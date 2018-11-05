@@ -17,12 +17,12 @@ void main() {
 	vec3 ambient = 0.3 * lightColor;
 
 	vec3 norm = normalize(vNormal);
-	vec3 lightDir = normalize(lightPos - fragPos);
+	vec3 lightDir = normalize(lightPos - vPos);
 	vec3 diffuse = max(dot(norm, lightDir), 0.0) * lightColor;
 
 	vec3 camDir = normalize(camPos - vPos);
 	vec3 reflectDir = reflect(-lightDir, norm);
-	vec3 specular = 0.9 * pow(max(dot(camDir, reflectDir), 0.0), 64) * lightColor;
+	vec3 specular = 0.5 * pow(max(dot(camDir, reflectDir), 0.0), 128) * lightColor;
 
 	theColor = (ambient + diffuse + specular) * lightColor;
 }
