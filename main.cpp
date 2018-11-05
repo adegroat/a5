@@ -17,6 +17,7 @@
 int windowWidth = 800;
 int windowHeight = 600;
 
+// Max frame rate
 float fps = 60.0f;
 
 // Mouse and keyboard inputs
@@ -34,6 +35,7 @@ CSCI441::ModelLoader* objModel;
 GLuint modeVao;
 Shader modelShader;
 
+// Camera variables
 glm::vec3 upVector = glm::vec3(0.0f, 1.0f, 0.0f);
 glm::vec3 camPos;
 glm::vec3 camForward;
@@ -48,7 +50,6 @@ void keyboardCallback(GLFWwindow *window, int key, int scancode, int action, int
 	if(action == GLFW_PRESS) {
 		if(key == GLFW_KEY_ESCAPE || key == GLFW_KEY_Q) {
 			glfwSetWindowShouldClose(window, GLFW_TRUE);
-			
 		} else {
 			keyboard[key] = true;
 		}
@@ -80,6 +81,7 @@ void mouseButtonCallback( GLFWwindow *window, int button, int action, int mods )
 	}
 }
 
+// Sets up the GLFW window and registers all mouse/keyboard/error callbacks
 GLFWwindow* setupGLFW() {
 	glfwSetErrorCallback(errorCallback);
 
@@ -88,10 +90,10 @@ GLFWwindow* setupGLFW() {
 		return NULL;
 	}
 
-	glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
-	glfwWindowHint( GLFW_RESIZABLE, GLFW_FALSE);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
 	GLFWwindow *window = glfwCreateWindow( windowWidth, windowHeight, "A5", NULL, NULL );
 	if(!window) {
@@ -110,6 +112,8 @@ GLFWwindow* setupGLFW() {
 	return window;
 }
 
+
+// Sets up all the OpenGL stuff.
 void setupOpenGL() {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
@@ -120,6 +124,7 @@ void setupOpenGL() {
 	glClearColor(0.0f, 0.0f, 0.3f, 1.0f);
 }
 
+// Initializes GLEW
 void setupGLEW() {
 	glewExperimental = GL_TRUE;
 	GLenum glewResult = glewInit();
@@ -144,13 +149,13 @@ void setupGLEW() {
 void setupSkybox() {
 	skyboxShader.init("shaders/vertex.glsl", "shaders/fragment.glsl");
 
-	// Load all the textures onto the GPU
+	// List of texture names. Must be in this order to look good.
 	std::string textures[] = {"posx", "negx", "posy", "negy", "posz", "negz"};
-	// std::string textures[] = {"rt", "lf", "up", "dn", "ft", "bk"};
 
 	glGenTextures(1, &skyboxTex);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTex);
 
+	// Load all the textures and send them to the GPU.
 	int width, height;
 	unsigned char* textureData = 0;
 	for(int i = 0; i < 6; i++) {
@@ -160,6 +165,7 @@ void setupSkybox() {
 			
 		if(textureData == NULL) {
 			std::cout << "Failed to load texture: " << texturePath << std::endl;
+			continue;
 		}
 
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, textureData);
@@ -174,47 +180,49 @@ void setupSkybox() {
 	glTexParameterf(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 	float skyboxVerts[] = {
-	    -1.0f,  1.0f, -1.0f,
-	    -1.0f, -1.0f, -1.0f,
-	     1.0f, -1.0f, -1.0f,
-	     1.0f, -1.0f, -1.0f,
-	     1.0f,  1.0f, -1.0f,
-	    -1.0f,  1.0f, -1.0f,
+		// Back
+		-1.0f, 1.0f, -1.0f,
+		-1.0f, -1.0f, -1.0f,
+		1.0f, -1.0f, -1.0f,
+		1.0f, -1.0f, -1.0f,
+		1.0f, 1.0f, -1.0f,
+		-1.0f, 1.0f, -1.0f,
 
-	    -1.0f, -1.0f,  1.0f,
-	    -1.0f, -1.0f, -1.0f,
-	    -1.0f,  1.0f, -1.0f,
-	    -1.0f,  1.0f, -1.0f,
-	    -1.0f,  1.0f,  1.0f,
-	    -1.0f, -1.0f,  1.0f,
 
-	     1.0f, -1.0f, -1.0f,
-	     1.0f, -1.0f,  1.0f,
-	     1.0f,  1.0f,  1.0f,
-	     1.0f,  1.0f,  1.0f,
-	     1.0f,  1.0f, -1.0f,
-	     1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f, 1.0f,
+		-1.0f, -1.0f, -1.0f,
+		-1.0f, 1.0f, -1.0f,
+		-1.0f, 1.0f, -1.0f,
+		-1.0f, 1.0f, 1.0f,
+		-1.0f, -1.0f, 1.0f,
 
-	    -1.0f, -1.0f,  1.0f,
-	    -1.0f,  1.0f,  1.0f,
-	     1.0f,  1.0f,  1.0f,
-	     1.0f,  1.0f,  1.0f,
-	     1.0f, -1.0f,  1.0f,
-	    -1.0f, -1.0f,  1.0f,
+		1.0f, -1.0f, -1.0f,
+		1.0f, -1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f,
+		1.0f, 1.0f, -1.0f,
+		1.0f, -1.0f, -1.0f,
 
-	    -1.0f,  1.0f, -1.0f,
-	     1.0f,  1.0f, -1.0f,
-	     1.0f,  1.0f,  1.0f,
-	     1.0f,  1.0f,  1.0f,
-	    -1.0f,  1.0f,  1.0f,
-	    -1.0f,  1.0f, -1.0f,
+		-1.0f, -1.0f, 1.0f,
+		-1.0f, 1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f,
+		1.0f, -1.0f, 1.0f,
+		-1.0f, -1.0f, 1.0f,
 
-	    -1.0f, -1.0f, -1.0f,
-	    -1.0f, -1.0f,  1.0f,
-	     1.0f, -1.0f, -1.0f,
-	     1.0f, -1.0f, -1.0f,
-	    -1.0f, -1.0f,  1.0f,
-	     1.0f, -1.0f,  1.0f
+		-1.0f, 1.0f, -1.0f,
+		1.0f, 1.0f, -1.0f,
+		1.0f, 1.0f, 1.0f,
+		1.0f, 1.0f, 1.0f,
+		-1.0f, 1.0f, 1.0f,
+		-1.0f, 1.0f, -1.0f,
+
+		-1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f, 1.0f,
+		1.0f, -1.0f, -1.0f,
+		1.0f, -1.0f, -1.0f,
+		-1.0f, -1.0f, 1.0f,
+		1.0f, -1.0f, 1.0f
 	};
 
 	glGenVertexArrays(1, &skyboxVao);
@@ -231,11 +239,13 @@ void setupSkybox() {
 }
 
 void render() {
+	// Draw the sky box
 	skyboxShader.useProgram();
 	glBindVertexArray(skyboxVao);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTex);
 	glDrawArrays(GL_TRIANGLES, 0, 36);
 
+	// Draw the model
 	modelShader.useProgram();
 	GLint vertexPosition = glGetAttribLocation(modelShader.getProgram(), "vPos");
 	//GLint normalPosition = glGetAttribLocation(modelShader.getProgram(), "verNormAttribName");
@@ -277,6 +287,7 @@ void update(float dt) {
 		pitch -= 1.0f * dt;
 	}
 
+	// Limit pitch rotation
 	if(pitch >= M_PI/2 - 0.01f) pitch = M_PI/2 - 0.01f;
 	if(pitch <= -M_PI/2 + 0.01f) pitch = -M_PI/2 + 0.01f;
 }
@@ -288,9 +299,9 @@ int main( int argc, char *argv[] ) {
 	}
 
 	// Initialize camera
-	camPos = glm::vec3(0.0f, 0.0f, 0.0f);
+	camPos = glm::vec3(0.0f, 0.0f, 5.0f);
 	camForward = glm::vec3(0.0f, 0.0f, -1.0f);
-	yaw = M_PI / 2.0f;
+	yaw = -M_PI / 2.0f;
 	pitch = 0.0f;
 
 	GLFWwindow *window = setupGLFW();
@@ -307,12 +318,11 @@ int main( int argc, char *argv[] ) {
 	float prevTime = glfwGetTime();
 
 	while(!glfwWindowShouldClose(window)) {
+		// Calculate the time per frame
 		float dt = glfwGetTime() - prevTime;
-
 		if(dt > 1.0f/fps) {
 			dt = 1.0f/fps;
 		}
-
 		prevTime = glfwGetTime();
 
 		glDrawBuffer(GL_BACK);
@@ -326,7 +336,7 @@ int main( int argc, char *argv[] ) {
 
 		glm::mat4 modelMtx = glm::mat4(1.0f);
 
-		// Calculate the model view projection matrix and update its uniform
+		// Calculate the model view projection matrix and send it to the GPU
 		glm::mat4 mvpMtx = projMtx * viewMtx * modelMtx;
 		int mvpLocation = glGetUniformLocation(skyboxShader.getProgram(), "mvpMatrix");
 		skyboxShader.useProgram();
