@@ -119,12 +119,12 @@ GLFWwindow* setupGLFW() {
 // Sets up all the OpenGL stuff.
 void setupOpenGL() {
 	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
+	//glDepthFunc(GL_LESS);
 
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glEnable(GL_BLEND);
+	//glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	glClearColor(0.0f, 0.0f, 0.3f, 1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 // Initializes GLEW
@@ -255,7 +255,7 @@ void render() {
 	// Draw the model
 	modelShader.useProgram();
 	GLint vertexLocation = glGetAttribLocation(modelShader.getProgram(), "vPos");
-	GLint normalLocation = glGetAttribLocation(modelShader.getProgram(), "normal");
+	GLint normalLocation = glGetAttribLocation(modelShader.getProgram(), "vNormal");
 	objModel->draw(vertexLocation, normalLocation);
 }
 
@@ -322,6 +322,10 @@ int main( int argc, char *argv[] ) {
 	CSCI441::ModelLoader model(argv[1]);
 	objModel = &model;
 
+	modelShader.useProgram();
+	GLint lightPosLocation = glGetUniformLocation(modelShader.getProgram(), "lightPos");
+	glUniform3f(lightPosLocation, 5.0f, 5.0f, -5.0f);
+
 	float prevTime = glfwGetTime();
 
 	while(!glfwWindowShouldClose(window)) {
@@ -356,6 +360,9 @@ int main( int argc, char *argv[] ) {
 		int modelMvpLocation = glGetUniformLocation(modelShader.getProgram(), "mvpMatrix");
 		modelShader.useProgram();
 		glUniformMatrix4fv(modelMvpLocation, 1, GL_FALSE, &mvpMtx[0][0]);
+
+		int camPosLocation = glGetUniformLocation(modelShader.getProgram(), "camPos");
+		glUniform3f(camPosLocation, camPos.x, camPos.y, camPos.z);
 
 		render();
 		update(dt);

@@ -9,5 +9,5 @@ uniform samplerCube cubeTexMap;
 void main() {
 	vec4 texel = texture(cubeTexMap, texCoord);
 
-	fragColor = texel;
+	fragColor = texel * 0.6;
 }
