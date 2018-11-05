@@ -254,9 +254,9 @@ void render() {
 
 	// Draw the model
 	modelShader.useProgram();
-	GLint vertexPosition = glGetAttribLocation(modelShader.getProgram(), "vPos");
-	//GLint normalPosition = glGetAttribLocation(modelShader.getProgram(), "verNormAttribName");
-	objModel->draw(vertexPosition);
+	GLint vertexLocation = glGetAttribLocation(modelShader.getProgram(), "vPos");
+	GLint normalLocation = glGetAttribLocation(modelShader.getProgram(), "normal");
+	objModel->draw(vertexLocation, normalLocation);
 }
 
 void update(float dt) {
