@@ -22,8 +22,7 @@ float fps = 60.0f;
 // Mouse and keyboard inputs
 std::map<int, bool> keyboard;
 bool leftMouse = false;
-glm::vec2 mouseChange, mousePos;
-double mx, my, mdx, mdy;
+glm::vec2 mousePos;
 
 // Sky box 
 GLuint skyboxVao;
@@ -60,8 +59,16 @@ void keyboardCallback(GLFWwindow *window, int key, int scancode, int action, int
 }
 
 void cursorCallback( GLFWwindow *window, double x, double y ) {
-	mx = x;
-	my = y;
+	float mdx = x - mousePos.x;
+	float mdy = y - mousePos.y;
+
+	if(leftMouse) {
+		yaw += 0.008f * mdx;
+		pitch += 0.008f * mdy;
+	}
+
+	mousePos.x = x;
+	mousePos.y = y;
 }
 
 void mouseButtonCallback( GLFWwindow *window, int button, int action, int mods ) {
@@ -236,20 +243,6 @@ void render() {
 }
 
 void update(float dt) {
-	if(leftMouse) {
-		float rotateSpeed = 0.5f;
-
-		if(mdx > 0.1f) {
-			yaw += mdx * dt * rotateSpeed;
-			mdx = 0.0f;
-		}
-
-		if(mdy > 0.1f) {
-			pitch -= mdy * dt * rotateSpeed;
-			mdy = 0.0f;
-		}
-	}
-
 	camForward.x = cos(yaw) * cos(pitch);
 	camForward.y = sin(pitch);
 	camForward.z = sin(yaw) * cos(pitch);
